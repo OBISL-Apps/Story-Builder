@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Story Builder | OBISL</title>
+    <style>
+        :root {
+            --primary-bg: #E2E8F0;
+            --app-white: #FFFFFF;
+            --accent-blue: #4F46E5;
+            --accent-pink: #EC4899;
+            --accent-green: #22C55E;
+            --border-dark: #1E293B;
+            --text-main: #1E293B;
+            --canvas-dot: #CBD5E1;
+            --ui-thickness: 4px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            height: 70px;
+            background: var(--app-white);
+            border-bottom: var(--ui-thickness) solid var(--border-dark);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 40px;
+            z-index: 100;
+        }
+
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        footer {
+            height: 40px;
+            background: var(--border-dark);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .panel {
+            background: var(--app-white);
+            border: var(--ui-thickness) solid var(--border-dark);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 8px 8px 0px var(--border-dark);
+        }
+
+        #world-canvas {
+            flex: 1;
+            background: #F8FAFC;
+            background-image: radial-gradient(var(--canvas-dot) 2px, transparent 2px);
+            background-size: 30px 30px;
+            position: relative;
+            border-radius: 16px;
+            border: 2px dashed var(--canvas-dot);
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .draggable-emoji {
+            position: absolute;
+            font-size: 5rem;
+            cursor: move;
+            user-select: none;
+            z-index: 10;
+        }
+
+        textarea, .input-field {
+            width: 100%;
+            padding: 15px;
+            border: 3px solid var(--border-dark);
+            border-radius: 16px;
+            font-size: 1.1rem;
+            outline: none;
+            background: #FFFBEB;
+        }
+        
+        textarea { height: 100px; resize: none; }
+
+        .btn {
+            padding: 12px 20px;
+            font-weight: 900;
+            text-transform: uppercase;
+            border: 3px solid var(--border-dark);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .btn-primary { background: var(--accent-blue); color: white; }
+        .btn-secondary { background: var(--accent-pink); color: white; }
+        .btn-reset { background: #ef4444; color: white; }
+        .btn:active { transform: translate(2px, 2px); }
+
+        .checklist {
+            margin: 10px 0;
+            font-size: 0.9rem;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .check-item {
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: #E2E8F0;
+            color: #64748b;
+            border: 1px solid #cbd5e1;
+        }
+        .check-item.done {
+            background: var(--accent-green);
+            color: white;
+            border-color: #166534;
+        }
+
+        #score-badge {
+            background: var(--border-dark);
+            color: gold;
+            padding: 8px 20px;
+            border-radius: 12px;
+            font-weight: 900;
+            font-size: 1.1rem;
+        }
+
+        #story-log { flex: 1; overflow-y: auto; margin-top: 10px; }
+        .log-entry {
+            background: #F1F5F9;
+            border: 2px solid var(--border-dark);
+            padding: 10px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+
+        #overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(30, 41, 59, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal {
+            background: white;
+            padding: 40px;
+            border: var(--ui-thickness) solid var(--border-dark);
+            border-radius: 30px;
+            text-align: center;
+            max-width: 800px;
+            width: 90%;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+
+        .instruction-list {
+            text-align: left;
+            margin: 20px auto;
+            max-width: 550px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .inst-step {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.05rem;
+        }
+        .inst-icon {
+            font-size: 1.8rem;
+            background: #f1f5f9;
+            padding: 8px;
+            border-radius: 12px;
+            min-width: 55px;
+            text-align: center;
+        }
+
+        .quest-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .quest-card {
+            border: 3px solid var(--border-dark);
+            border-radius: 20px;
+            padding: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #f8fafc;
+        }
+        .quest-card:hover { transform: translateY(-5px); background: var(--primary-bg); }
+        .quest-card.active { border-color: var(--accent-green); background: #f0fdf4; }
+
+        .hidden { display: none !important; }
+
+        .name-section {
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            border: 2px solid var(--border-dark);
+        }
+    </style>
+</head>
+<body>
+
+<div id="overlay">
+    <div class="modal" id="modal-content">
+        <h1 style="color: var(--accent-blue);">👋 Welcome to Story Builder!</h1>
+        
+        <div class="name-section" style="margin-top: 20px;">
+            <p style="margin-bottom: 10px; font-weight: bold;">Enter Student Name:</p>
+            <input type="text" id="student-name" class="input-field" placeholder="Your Name here..." maxlength="25">
+        </div>
+
+        <p style="font-weight: bold;">Instructions:</p>
+        <div class="instruction-list">
+            <div class="inst-step">
+                <div class="inst-icon">🎨</div>
+                <span><strong>Set the Scene:</strong> Drag stickers to imagine your story.</span>
+            </div>
+            <div class="inst-step">
+                <div class="inst-icon">✍️</div>
+                <span><strong>Write:</strong> Describe the action in the box.</span>
+            </div>
+            <div class="inst-step">
+                <div class="inst-icon">💎</div>
+                <span><strong>Score:</strong> Use adjectives and connectors to earn marks!</span>
+            </div>
+            <div class="inst-step">
+                <div class="inst-icon">🗺️</div>
+                <span><strong>Quest:</strong> You can change stories using the "Change Quest" button.</span>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" style="width: 100%; font-size: 1.2rem; margin-top: 10px;" onclick="game.startGame()">Let's Build! 🏗️</button>
+    </div>
+</div>
+
+<header>
+    <h1 style="font-size: 1.5rem;">🏗️ STORY BUILDER</h1>
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <div id="score-badge">SCORE: 0 / 100</div>
+        <button class="btn btn-primary" onclick="game.showQuestSelector()">🗺️ Change Quest</button>
+        <button class="btn btn-reset" onclick="game.resetGame()">Reset</button>
+    </div>
+</header>
+
+<main>
+    <section class="panel">
+        <h2 id="stage-title">Part 1: The Beginning</h2>
+        <div id="world-canvas"></div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-secondary" onclick="game.spawnIcons()">🔄 Swap Stickers</button>
+            <button class="btn btn-primary" style="flex: 1;" onclick="game.submitStage()">Next Stage ➡️</button>
+        </div>
+    </section>
+
+    <aside class="panel">
+        <h3 id="prompt-text">Who is the hero?</h3>
+        
+        <div class="checklist">
+            <span id="check-words" class="check-item">Long sentence (+10)</span>
+            <span id="check-connect" class="check-item">Connector (+5)</span>
+            <span id="check-adj" class="check-item">Adjective (+5)</span>
+        </div>
+
+        <textarea id="story-input" placeholder="Type your story here..." oninput="game.liveCheck()"></textarea>
+        
+        <div id="story-log"></div>
+    </aside>
+</main>
+
+<footer>DEVELOPED BY OBISL IT TEAM</footer>
+
+<script>
+    const CONNECTORS = ['because', 'suddenly', 'finally', 'then', 'next', 'and'];
+    const ADJECTIVES = ['shiny', 'scary', 'brave', 'dark', 'giant', 'magic', 'golden', 'cold', 'happy'];
+
+    const QUESTS = [
+        { name: "Brave Knight", emoji: "🏰", stages: [{t:"Start", p:"Introduce your Knight", i:['🏰','🤴']}, {t:"Problem", p:"Oh no! A Dragon!", i:['🐉','🔥']}, {t:"Journey", p:"The Knight travels...", i:['🐎','🌲']}, {t:"Battle", p:"Fight!", i:['⚔️','🛡️']}, {t:"End", p:"Victory!", i:['🏆','🎊']}] },
+        { name: "Space Escape", emoji: "🚀", stages: [{t:"Launch", p:"Blast off!", i:['🚀','👨‍🚀']}, {t:"Arrival", p:"A new planet", i:['👽','🪐']}, {t:"Danger", p:"Asteroids!", i:['☄️','🚨']}, {t:"Fix", p:"The Robot repairs", i:['🤖','🔧']}, {t:"Home", p:"Back to Earth", i:['🌎','✨']}] },
+        { name: "Pirate Gold", emoji: "🏝️", stages: [{t:"Dock", p:"Ship is ready", i:['⛵','🏴‍☠️']}, {t:"Map", p:"Follow the trail", i:['🗺️','🦜']}, {t:"Storm", p:"Big waves!", i:['🌊','🌩️']}, {t:"Treasure", p:"Dig it up!", i:['💰','🗝️']}, {t:"Home", p:"Rich!", i:['💎','🍖']}] },
+        { name: "Magic Woods", emoji: "🐾", stages: [{t:"Morning", p:"Start walking", i:['🌲','🐻']}, {t:"Magic", p:"A Fairy appears", i:['🧚','✨']}, {t:"Mystery", p:"Find a cave", i:['🔦','🦇']}, {t:"Lake", p:"Hidden water", i:['🦢','🛶']}, {t:"Rest", p:"Campfire time", i:['⛺','🔥']}] },
+        { name: "Mad Science", emoji: "🧪", stages: [{t:"Lab", p:"The experiment", i:['🧪','🔬']}, {t:"Boom", p:"Something blew up!", i:['💥','🧪']}, {t:"Result", p:"A Monster!", i:['🦎','🦖']}, {t:"Control", p:"Use the remote", i:['🕹️','⚡']}, {t:"Success", p:"Nobel Prize", i:['🏆','🌟']}] }
+    ];
+
+    const game = {
+        currentQuestIdx: 0,
+        currentStage: 0,
+        totalScore: 0,
+        studentName: "",
+
+        init() { this.updateUI(); },
+
+        startGame() {
+            const nameInput = document.getElementById('student-name');
+            if (nameInput.value.trim() === "") {
+                alert("Please enter your name to start!");
+                return;
+            }
+            this.studentName = nameInput.value.trim();
+            document.getElementById('overlay').classList.add('hidden');
+        },
+
+        showQuestSelector() {
+            const overlay = document.getElementById('overlay');
+            const content = document.getElementById('modal-content');
+            overlay.classList.remove('hidden');
+
+            let questCards = QUESTS.map((q, idx) => `
+                <div class="quest-card ${this.currentQuestIdx == idx ? 'active' : ''}" onclick="game.selectQuest(${idx})">
+                    <div class="quest-emoji">${q.emoji}</div>
+                    <h4>${q.name}</h4>
+                </div>
+            `).join('');
+
+            content.innerHTML = `
+                <h1 style="margin-bottom:10px;">Choose Your Story Quest</h1>
+                <p>Hello ${this.studentName}, pick a new world!</p>
+                <div class="quest-grid">${questCards}</div>
+                <button class="btn btn-reset" style="margin-top:30px; width:100%" onclick="document.getElementById('overlay').classList.add('hidden')">Cancel</button>
+            `;
+        },
+
+        selectQuest(idx) {
+            this.currentQuestIdx = idx;
+            document.getElementById('overlay').classList.add('hidden');
+            this.resetGame();
+        },
+
+        updateUI() {
+            const stage = QUESTS[this.currentQuestIdx].stages[this.currentStage];
+            document.getElementById('stage-title').innerText = `Part ${this.currentStage + 1}: ${stage.t}`;
+            document.getElementById('prompt-text').innerText = stage.p;
+            document.getElementById('score-badge').innerText = `SCORE: ${this.totalScore} / 100`;
+            this.spawnIcons();
+        },
+
+        spawnIcons() {
+            const canvas = document.getElementById('world-canvas');
+            canvas.innerHTML = '';
+            QUESTS[this.currentQuestIdx].stages[this.currentStage].i.forEach(icon => {
+                const el = document.createElement('div');
+                el.className = 'draggable-emoji';
+                el.innerText = icon;
+                el.style.left = (Math.random() * 60 + 20) + '%';
+                el.style.top = (Math.random() * 50 + 25) + '%';
+                this.drag(el);
+                canvas.appendChild(el);
+            });
+        },
+
+        drag(el) {
+            let p1, p2, p3, p4;
+            el.onmousedown = (e) => {
+                p3 = e.clientX; p4 = e.clientY;
+                document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
+                document.onmousemove = (e) => {
+                    p1 = p3 - e.clientX; p2 = p4 - e.clientY;
+                    p3 = e.clientX; p4 = e.clientY;
+                    el.style.top = (el.offsetTop - p2) + "px";
+                    el.style.left = (el.offsetLeft - p1) + "px";
+                };
+            };
+            
+            // Touch support
+            el.ontouchstart = (e) => {
+                const touch = e.touches[0];
+                p3 = touch.clientX; p4 = touch.clientY;
+                document.ontouchend = () => { document.ontouchend = null; document.ontouchmove = null; };
+                document.ontouchmove = (e) => {
+                    const touchMove = e.touches[0];
+                    p1 = p3 - touchMove.clientX; p2 = p4 - touchMove.clientY;
+                    p3 = touchMove.clientX; p4 = touchMove.clientY;
+                    el.style.top = (el.offsetTop - p2) + "px";
+                    el.style.left = (el.offsetLeft - p1) + "px";
+                };
+            };
+        },
+
+        liveCheck() {
+            const val = document.getElementById('story-input').value.toLowerCase();
+            const words = val.trim().split(/\s+/).filter(w => w.length > 0);
+            const hasWords = words.length >= 8;
+            const hasConnect = CONNECTORS.some(c => val.includes(c));
+            const hasAdj = ADJECTIVES.some(a => val.includes(a));
+
+            document.getElementById('check-words').classList.toggle('done', hasWords);
+            document.getElementById('check-connect').classList.toggle('done', hasConnect);
+            document.getElementById('check-adj').classList.toggle('done', hasAdj);
+
+            return (hasWords ? 10 : 0) + (hasConnect ? 5 : 0) + (hasAdj ? 5 : 0);
+        },
+
+        submitStage() {
+            const input = document.getElementById('story-input');
+            if (input.value.length < 5) return alert("Write a sentence first!");
+
+            this.totalScore += this.liveCheck();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<strong>Part ${this.currentStage+1}:</strong> ${input.value}`;
+            document.getElementById('story-log').prepend(entry);
+
+            if (this.currentStage < 4) {
+                this.currentStage++;
+                input.value = '';
+                this.updateUI();
+            } else {
+                this.finish();
+            }
+        },
+
+        finish() {
+            const overlay = document.getElementById('overlay');
+            const content = document.getElementById('modal-content');
+            overlay.classList.remove('hidden');
+            
+            content.innerHTML = `
+                <div style="padding: 10px;">
+                    <p style="font-size: 1.5rem; color: var(--accent-green); font-weight: bold; margin-bottom: 0;">🌟 Good job!</p>
+                    <h1 style="font-size: 3rem; color: var(--accent-blue); margin-bottom: 5px;">${this.studentName}</h1>
+                    <div style="background: var(--border-dark); color: gold; padding: 40px; border-radius: 24px; display: inline-block; width: 100%; max-width: 400px; margin-top: 20px;">
+                        <p style="font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 10px; font-weight: bold;">FINAL MARK RECORD</p>
+                        <p style="font-size: 5rem; font-weight: 900;">${this.totalScore}/100</p>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:12px; margin-top: 40px;">
+                        <button class="btn btn-primary" onclick="game.showQuestSelector()">Try Another Quest</button>
+                        <button class="btn btn-reset" onclick="location.reload()">Start New Student</button>
+                    </div>
+                </div>
+            `;
+        },
+
+        resetGame() {
+            this.currentStage = 0;
+            this.totalScore = 0;
+            document.getElementById('story-log').innerHTML = '';
+            document.getElementById('story-input').value = '';
+            document.getElementById('overlay').classList.add('hidden');
+            this.updateUI();
+        }
+    };
+
+    window.onload = () => game.init();
+</script>
+</body>
+</html>
